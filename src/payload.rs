@@ -1,6 +1,8 @@
 use crate::control_number::ControlNumber;
 use serde::{Serialize};
 
+// TODO: abstract components of the payload to their own files
+
 const MANUFACTURER: &str = "BUSSE HOSPITAL DISPOSABLES";
 const DUNS_NUMBER: &str = "0849233000001";
 
