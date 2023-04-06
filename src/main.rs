@@ -4,9 +4,7 @@ mod payload;
 mod read_csv;
 mod to_json;
 mod stedi;
-
-use std::fs::File;
-use std::io::prelude::*;
+mod to_edi;
 
 use chrono::NaiveDate;
 use clap::Parser;
@@ -16,6 +14,7 @@ use crate::payload::*;
 use crate::read_csv::*;
 use crate::to_json::*;
 use crate::stedi::*;
+use crate::to_edi::*;
 
 const CASE: &str = "CA";
 const ADD: &str = "AI";
@@ -55,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "change" => DocumentType::Change,
         "resubmit" => DocumentType::Resubmit,
         "renew" => DocumentType::Renew,
-        "cancel" => DocumentType::Cancel,        
+        "cancel" => DocumentType::Cancel,
         _ => DocumentType::New,
     };    
 
@@ -83,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 contract.add_reference(ReferenceType::MutuallyDefined, &args.outgoing_contract_number_if_any);
             }
 
-            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path());    
+            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path())?;    
 
             for buyer in buyer_data.into_iter() {
                 let mut processed = Dealer::new(match buyer.name.as_str() {
@@ -119,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 contract.add_dealer(processed);
             };
 
-            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path());    
+            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path())?;    
                 
             for (idx, agreement) in contract_data.iter().enumerate() {
                 let line_number: i32 = (idx + 1).try_into().unwrap();
@@ -149,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         // change type - the buyer and contract csv files should contain only changes
         DocumentType::Change => {
-            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path());
+            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path())?;
 
             if buyer_data.len() > 0 {
                 for buyer in buyer_data.into_iter() {
@@ -185,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
             }
 
-            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path());    
+            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path())?;    
                 
             if contract_data.len() > 0 {
                 for (idx, agreement) in contract_data.iter().enumerate() {
@@ -220,7 +219,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 contract.add_reference(ReferenceType::MutuallyDefined, &args.outgoing_contract_number_if_any);
             }
 
-            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path());    
+            let buyer_data = parse_csv::<EndBuyerData>(config.get_buyers_path(args.buyer_file.as_str()).as_path())?;    
 
             for buyer in buyer_data.into_iter() {
                 let mut processed = Dealer::new(match buyer.name.as_str() {
@@ -254,7 +253,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 contract.add_dealer(processed);
             };
 
-            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path());    
+            let contract_data = parse_csv::<ContractData>(config.get_contracts_path(args.contract_number.as_str()).as_path())?;
                 
             for (idx, agreement) in contract_data.iter().enumerate() {
                 let line_number: i32 = (idx + 1).try_into().unwrap();
@@ -308,9 +307,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // println!("{:?}", payload);
 
     // save payload to json file
-    to_json::<Payload>(&payload);
+    to_json::<Payload>(&payload)?;
     // combine payload with schema file
-    combine_schema_with_output_to_json();
+    combine_schema_with_output_to_json()?;
 
     // send post request to api to turn json into mapped_json
     let (map_id, api_key, guide_id) = config.get_stedi_params();
@@ -324,31 +323,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn write_to_file(data: &str) -> Result<(), Box<dyn std::error::Error>> {    
-    let mut file = File::create("output.edi")?;
-
-    let lines: Vec<&str> = data.trim_start_matches("\"").trim_end_matches("\"").split("\\n").collect();
-    let mut count: i32 = 0;
-
-    // dbg!(&lines);
-
-    for line in lines {        
-        if regex::Regex::new(r"^N(3|4)$").unwrap().is_match(line) {
-            count += 1;
-            continue;
-        }        
-        if regex::Regex::new(r"^SE\*").unwrap().is_match(line) {
-            let parts: Vec<&str> = line.split("*").collect();
-            let new_count = parts[1].parse::<i32>().unwrap() - count;
-
-            // dbg!(&parts);
-            // dbg!(&new_count);
-
-            writeln!(file, "{}*{}*{}", parts[0], new_count, parts[2])?;
-            continue;
-        }
-        writeln!(file, "{}", line)?;
-    }
-
-    Ok(())
-}

@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -44,11 +44,7 @@ impl Config {
                 guide_id: config.stedi.guide_id,
             },
         }
-    }
-
-    pub fn get_base_path(&self) -> &Path {
-        Path::new(self.paths.base.as_str())
-    }
+    }   
 
     pub fn get_buyers_path(&self, file_name: &str) -> PathBuf {
         let mut path_buf = PathBuf::new();

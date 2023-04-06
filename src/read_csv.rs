@@ -24,9 +24,9 @@ pub struct EndBuyerData {
     pub end: String,
 }
 
-pub fn parse_csv<T>(path: &Path) -> Vec<T> where
+pub fn parse_csv<T>(path: &Path) -> Result<Vec<T>, Box<dyn std::error::Error>> where
     T: DeserializeOwned {
-    let mut reader = csv::Reader::from_path(path).unwrap();
+    let mut reader = csv::Reader::from_path(path)?;
     
     let records: Vec<T> = reader
         .deserialize()
@@ -35,5 +35,5 @@ pub fn parse_csv<T>(path: &Path) -> Vec<T> where
         })
         .collect();
 
-    records
+    Ok(records)
 }

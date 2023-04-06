@@ -346,22 +346,22 @@ impl Reference {
     }
 }
 
-impl Detail {
-    pub fn new(description: &str) -> Self {
-        Self {
-            description: description.to_string(),
-        }
-    }
-}
+// impl Detail {
+//     pub fn new(description: &str) -> Self {
+//         Self {
+//             description: description.to_string(),
+//         }
+//     }
+// }
 
-impl Line {
-    pub fn new(line_number: i32, item_id: &str) -> Self {
-        Self {
-            line_number: line_number,
-            item_id: item_id.to_string(),
-        }
-    }
-}
+// impl Line {
+//     pub fn new(line_number: i32, item_id: &str) -> Self {
+//         Self {
+//             line_number: line_number,
+//             item_id: item_id.to_string(),
+//         }
+//     }
+// }
 
 impl Address {
     pub fn new(addr1: &str, city: &str, state: &str, zip: &str) -> Self {

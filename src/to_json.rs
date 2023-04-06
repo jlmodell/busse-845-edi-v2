@@ -1,29 +1,39 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-pub fn to_json<T>(payload: &T) where T: serde::Serialize {
-    let mut file = File::create("output.json").unwrap();
-    let json = serde_json::to_string_pretty(payload).unwrap();
-    file.write_all(json.as_bytes()).unwrap();
+const OUTPUT_FILE: &str = "output.json";
+const SCHEMA_FILE: &str = "schema.json";
+const COMBINED_FILE: &str = "combined.json";
+
+const DEFAULT_SCHEMA_KEY: &str = "default";
+
+pub fn to_json<T>(payload: &T) -> Result<(), Box<dyn std::error::Error>> where T: serde::Serialize {
+    let mut file = File::create(OUTPUT_FILE)?;
+    let json = serde_json::to_string_pretty(payload)?;
+    file.write_all(json.as_bytes())?;
+
+    Ok(())
 }
 
-pub fn combine_schema_with_output_to_json() {
-    let mut schema_file = File::open("schema.json").unwrap();
+pub fn combine_schema_with_output_to_json() -> Result<(), Box<dyn std::error::Error>> {
+    let mut schema_file = File::open(SCHEMA_FILE)?;
     let mut schema = String::new();
-    schema_file.read_to_string(&mut schema).unwrap();
+    schema_file.read_to_string(&mut schema)?;
 
-    let mut schema_json: serde_json::Value = serde_json::from_str(&schema).unwrap();
+    let mut schema_json: serde_json::Value = serde_json::from_str(&schema)?;
 
-    let mut output_file = File::open("output.json").unwrap();
+    let mut output_file = File::open(OUTPUT_FILE)?;
     let mut output = String::new();
-    output_file.read_to_string(&mut output).unwrap();
+    output_file.read_to_string(&mut output)?;
 
-    let output_json: serde_json::Value = serde_json::from_str(&output).unwrap();
+    let output_json: serde_json::Value = serde_json::from_str(&output)?;
 
-    schema_json["default"] = output_json["default"].clone();
+    schema_json[DEFAULT_SCHEMA_KEY] = output_json[DEFAULT_SCHEMA_KEY].clone();
 
-    let output_str = serde_json::to_string_pretty(&schema_json).unwrap();
+    let output_str = serde_json::to_string_pretty(&schema_json)?;
 
-    let mut combined_file = File::create("combined.json").unwrap();
-    combined_file.write_all(output_str.as_bytes()).unwrap();
+    let mut combined_file = File::create(COMBINED_FILE)?;
+    combined_file.write_all(output_str.as_bytes())?;
+
+    Ok(())
 }
